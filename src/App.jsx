@@ -112,7 +112,7 @@ export default function App() {
     }
 
     if (result.completed) {
-      new Notification("Time to leave office 🎉 ");
+      new Notification("It's Time to leave office 🎉 ");
       return;
     }
 
@@ -125,12 +125,12 @@ export default function App() {
     const delay = leaveMoment.diff(now);
 
     if (delay <= 0) {
-      new Notification("Time to leave office 🎉 ");
+      new Notification("It's Time to leave office 🎉 ");
       return;
     }
 
     const timer = setTimeout(() => {
-      new Notification("Time to leave office 🎉 ");
+      new Notification("It's Time to leave office 🎉 ");
     }, delay);
 
     return () => clearTimeout(timer);
