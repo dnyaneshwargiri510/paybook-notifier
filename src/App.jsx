@@ -57,6 +57,15 @@ function calculateLeaveTime(text) {
     }
   }
 
+  if (activeIn) {
+    const now = dayjs();
+
+    const currentTime = dayjs(
+      `2026-01-01 ${now.format("HH:mm")}`
+    );
+
+    workedMinutes += currentTime.diff(activeIn, "minute");
+  }
   const lastInPunch = [...punches].reverse().find((p) => p.type === "IN");
 
   if (!lastInPunch) {
@@ -73,7 +82,11 @@ function calculateLeaveTime(text) {
     };
   }
 
-  const leaveTime = dayjs(`2026-01-01 ${lastInPunch.time}`)
+  const leaveBaseTime = activeIn
+    ? dayjs(`2026-01-01 ${dayjs().format("HH:mm")}`)
+    : dayjs(`2026-01-01 ${lastInPunch.time}`);
+
+  const leaveTime = leaveBaseTime
     .add(remainingMinutes, "minute")
     .format("HH:mm");
 
@@ -143,7 +156,7 @@ export default function App() {
           margin: "0 auto",
         }}
       >
-    <Space orientation="vertical" size="large" style={{ width: "100%" }}>
+        <Space orientation="vertical" size="large" style={{ width: "100%" }}>
           <div>
             <Title level={2}>Paybook Office Timer</Title>
             <Text>
@@ -180,7 +193,7 @@ export default function App() {
 
           {result && (
             <Card>
-             <Space orientation="vertical">
+              <Space orientation="vertical">
                 <Text strong>
                   Worked Hours: {(result.workedMinutes / 60).toFixed(2)} hrs
                 </Text>
