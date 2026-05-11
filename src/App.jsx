@@ -67,6 +67,7 @@ function calculateLeaveTime(text) {
     workedMinutes += currentTime.diff(activeIn, "minute");
   }
   const lastInPunch = [...punches].reverse().find((p) => p.type === "IN");
+  const isCurrentlyInOffice = activeIn !== null;
 
   if (!lastInPunch) {
     return null;
@@ -82,19 +83,20 @@ function calculateLeaveTime(text) {
     };
   }
 
-  const leaveBaseTime = activeIn
-    ? dayjs(`2026-01-01 ${dayjs().format("HH:mm")}`)
-    : dayjs(`2026-01-01 ${lastInPunch.time}`);
+  let leaveTime = null;
 
-  const leaveTime = leaveBaseTime
-    .add(remainingMinutes, "minute")
-    .format("HH:mm");
+  if (isCurrentlyInOffice) {
+    leaveTime = dayjs()
+      .add(remainingMinutes, "minute")
+      .format("HH:mm");
+  }
 
   return {
     completed: false,
     leaveTime,
     workedMinutes,
     remainingMinutes,
+    isCurrentlyInOffice,
   };
 }
 
@@ -110,7 +112,7 @@ export default function App() {
     }
 
     if (result.completed) {
-      new Notification("Time to leave office");
+      new Notification("Time to leave office 🎉 ");
       return;
     }
 
@@ -123,12 +125,12 @@ export default function App() {
     const delay = leaveMoment.diff(now);
 
     if (delay <= 0) {
-      new Notification("Time to leave office");
+      new Notification("Time to leave office 🎉 ");
       return;
     }
 
     const timer = setTimeout(() => {
-      new Notification("Time to leave office");
+      new Notification("Time to leave office 🎉 ");
     }, delay);
 
     return () => clearTimeout(timer);
@@ -192,37 +194,176 @@ export default function App() {
           )}
 
           {result && (
-            <Card>
-              <Space orientation="vertical">
-                <Text strong>
-                  Worked Hours: {(result.workedMinutes / 60).toFixed(2)} hrs
-                </Text>
-
-                {!result.completed && (
-                  <>
-                    <Text strong>
-                      Remaining Time:{" "}
-                      {(result.remainingMinutes / 60).toFixed(2)} hrs
-                    </Text>
-
-                    <Title level={3} style={{ margin: 0 }}>
-                      Leave Office At: {result.leaveTime}
-                    </Title>
-                  </>
-                )}
-
-                {result.completed && (
-                  <Alert
-                    type="success"
-                    title="8 hours completed. Time to leave office."
-                    showIcon
-                  />
-                )}
-              </Space>
-            </Card>
+            <LiveDashboard
+              result={result}
+              notificationEnabled={notificationEnabled}
+            />
           )}
         </Space>
       </Card>
     </div>
+  );
+}
+
+function LiveDashboard({ result, notificationEnabled }) {
+  const [now, setNow] = useState(dayjs());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(dayjs());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const liveWorkedMinutes =
+    result.completed
+      ? result.workedMinutes
+      : result.workedMinutes + now.second() / 60;
+
+  const remainingMinutes = Math.max(
+    480 - liveWorkedMinutes,
+    0
+  );
+
+  const progress = Math.min(
+    (liveWorkedMinutes / 480) * 100,
+    100
+  );
+
+  const formatTime = (minutes) => {
+    const hrs = Math.floor(minutes / 60);
+    const mins = Math.floor(minutes % 60);
+    const secs = Math.floor((minutes % 1) * 60);
+
+    return `${hrs}h ${mins}m ${secs}s`;
+  };
+
+  return (
+    <Card
+      style={{
+        borderRadius: 20,
+      }}
+    >
+      <Space
+        orientation="vertical"
+        size="large"
+        style={{ width: "100%" }}
+      >
+        <div
+          style={{
+            display: "flex",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <Card
+            style={{
+              flex: 1,
+              minWidth: 250,
+              borderRadius: 20,
+              textAlign: "center",
+            }}
+          >
+            <Text type="secondary">Worked Hours</Text>
+
+            <div
+              style={{
+                fontSize: 48,
+                fontWeight: 800,
+                marginTop: 16,
+              }}
+            >
+              {formatTime(liveWorkedMinutes)}
+            </div>
+          </Card>
+
+          <Card
+            style={{
+              flex: 1,
+              minWidth: 250,
+              borderRadius: 20,
+              textAlign: "center",
+            }}
+          >
+            <Text type="secondary">Remaining Time</Text>
+
+            <div
+              style={{
+                fontSize: 48,
+                fontWeight: 800,
+                marginTop: 16,
+              }}
+            >
+              {formatTime(remainingMinutes)}
+            </div>
+          </Card>
+        </div>
+
+        <Card
+          style={{
+            borderRadius: 20,
+            textAlign: "center",
+          }}
+        >
+          <Text type="secondary">Leave Office At</Text>
+
+          <div
+            style={{
+              fontSize: 64,
+              fontWeight: 900,
+              marginTop: 10,
+              letterSpacing: 2,
+            }}
+          >
+            {result.leaveTime}
+          </div>
+
+          {notificationEnabled && (
+            <Alert
+              type="success"
+              title="Leave notification enabled"
+              showIcon
+              style={{
+                marginTop: 20,
+              }}
+            />
+          )}
+        </Card>
+
+        <div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: 8,
+              fontWeight: 600,
+            }}
+          >
+            <span>Daily Progress</span>
+            <span>{progress.toFixed(1)}%</span>
+          </div>
+
+          <div
+            style={{
+              height: 22,
+              background: "#e5e7eb",
+              borderRadius: 999,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: `${progress}%`,
+                height: "100%",
+                background:
+                  "linear-gradient(90deg, #1677ff, #52c41a)",
+                transition: "width 1s linear",
+              }}
+            />
+          </div>
+        </div>
+      </Space>
+    </Card>
   );
 }
