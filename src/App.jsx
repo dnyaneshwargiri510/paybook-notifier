@@ -47,7 +47,7 @@ function calculateLeaveTime(text) {
   for (const punch of punches) {
     const current = dayjs(`2026-01-01 ${punch.time}`);
 
-    if (punch.type === "IN") {
+    if (punch.type === "IN" && !activeIn) {
       activeIn = current;
     }
 
@@ -97,17 +97,26 @@ function calculateLeaveTime(text) {
     workedMinutes,
     remainingMinutes,
     isCurrentlyInOffice,
+    activeInTime: activeIn
+      ? activeIn.format("HH:mm")
+      : null,
   };
 }
 
 export default function App() {
   const [text, setText] = useState("");
   const [notificationEnabled, setNotificationEnabled] = useState(false);
-
-  const result = useMemo(() => calculateLeaveTime(text), [text]);
-
+  const [now, setNow] = useState(dayjs());
+  const result = useMemo(
+    () => calculateLeaveTime(text),
+    [text, now]
+  );
   useEffect(() => {
-    if (!notificationEnabled || !result) {
+    if (
+      !notificationEnabled ||
+      !result ||
+      !result.leaveTime
+    ) {
       return;
     }
 
@@ -135,6 +144,14 @@ export default function App() {
 
     return () => clearTimeout(timer);
   }, [notificationEnabled, result]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(dayjs());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const enableNotifications = async () => {
     const permission = await Notification.requestPermission();
@@ -216,18 +233,22 @@ function LiveDashboard({ result, notificationEnabled }) {
     return () => clearInterval(timer);
   }, []);
 
-  const liveWorkedMinutes =
-    result.completed
-      ? result.workedMinutes
-      : result.workedMinutes + now.second() / 60;
+  let liveWorkedMinutes = result.workedMinutes;
+
+  if (
+    result.isCurrentlyInOffice &&
+    result.activeInTime
+  ) {
+    liveWorkedMinutes += now.second() / 60;
+  }
 
   const remainingMinutes = Math.max(
-    480 - liveWorkedMinutes,
+    REQUIRED_MINUTES - liveWorkedMinutes,
     0
-  );
+  )
 
   const progress = Math.min(
-    (liveWorkedMinutes / 480) * 100,
+    (liveWorkedMinutes / REQUIRED_MINUTES) * 100,
     100
   );
 
@@ -316,7 +337,7 @@ function LiveDashboard({ result, notificationEnabled }) {
               letterSpacing: 2,
             }}
           >
-            {result.leaveTime}
+            {result.leaveTime || "--:--"}
           </div>
 
           {notificationEnabled && (
