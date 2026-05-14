@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Card, Input, Space, Typography, Alert } from "antd";
+import { Button, Card, Input, Space, Typography, Alert, Modal } from "antd";
 import dayjs from "dayjs";
+
+
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -12,19 +14,15 @@ function parsePunches(text) {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
-
   const punches = [];
 
   for (const line of lines) {
     const parts = line.split(/\s+/);
-
     const time = parts.find((p) => /^\d{2}:\d{2}$/.test(p));
     const type = parts.find((p) => p === "IN" || p === "OUT");
-
     if (!time || !type) {
       continue;
     }
-
     punches.push({
       time,
       type,
@@ -36,7 +34,6 @@ function parsePunches(text) {
 
 function calculateLeaveTime(text) {
   const punches = parsePunches(text);
-
   if (punches.length === 0) {
     return null;
   }
@@ -46,11 +43,9 @@ function calculateLeaveTime(text) {
 
   for (const punch of punches) {
     const current = dayjs(`2026-01-01 ${punch.time}`);
-
     if (punch.type === "IN" && !activeIn) {
       activeIn = current;
     }
-
     if (punch.type === "OUT" && activeIn) {
       workedMinutes += current.diff(activeIn, "minute");
       activeIn = null;
@@ -59,20 +54,16 @@ function calculateLeaveTime(text) {
 
   if (activeIn) {
     const now = dayjs();
-
     const currentTime = dayjs(
       `2026-01-01 ${now.format("HH:mm")}`
     );
-
     workedMinutes += currentTime.diff(activeIn, "minute");
   }
   const lastInPunch = [...punches].reverse().find((p) => p.type === "IN");
   const isCurrentlyInOffice = activeIn !== null;
-
   if (!lastInPunch) {
     return null;
   }
-
   const remainingMinutes = REQUIRED_MINUTES - workedMinutes;
 
   if (remainingMinutes <= 0) {
@@ -103,6 +94,75 @@ function calculateLeaveTime(text) {
   };
 }
 
+function openEowEmail({
+  currentWeekTasks,
+  nextWeekTasks,
+  roadblocks,
+  employeeName,
+}) {
+  const formattedDate = dayjs().format("DD/MM/YYYY");
+  const subject = `EOW - ${employeeName} - ${formattedDate}`;
+  const createRows = (text) => {
+    return text
+      .split("\n")
+      .filter(Boolean)
+      .map((line, index) => {
+        const parts = line.split("|");
+        return `
+<tr>
+  <td>${index + 1}</td>
+  <td>${parts[0] || ""}</td>
+  <td>${parts[1] || ""}</td>
+</tr>
+`;
+      })
+      .join("");
+  };
+
+  const formatTasks = (text) => {
+    return text
+      .split("\n")
+      .filter(Boolean)
+      .map((line, index) => {
+        return `${index + 1}. ${line} | `;
+      })
+      .join("\n");
+  };
+
+  const body = `Hello Team,
+
+Please find my EOW update for this week below.
+
+IN A FEW WORDS, HOW DID THIS WEEK GO FOR YOU?
+This week was productive and focused on ongoing deliverables, collaboration, and progress across assigned tasks.
+
+TASKS ACCOMPLISHED THIS WEEK:
+
+------------------------------------------------------------
+Sr No | Project / Task | Description
+------------------------------------------------------------
+${formatTasks(currentWeekTasks)}
+
+NEXT WEEK'S TOP PRIORITIES:
+------------------------------------------------------------
+Sr No | Project / Task | Description
+------------------------------------------------------------
+${formatTasks(nextWeekTasks)}
+
+ROADBLOCKS:
+
+${roadblocks || "Currently, there are no major blockers."}
+
+Best regards,
+${employeeName}
+`;
+  const mailto = `mailto:Mceod@transperfect.com?subject=${encodeURIComponent(
+    subject
+  )}&body=${encodeURIComponent(body)}`;
+
+  window.location.href = mailto;
+}
+
 export default function App() {
   const [text, setText] = useState("");
   const [notificationEnabled, setNotificationEnabled] = useState(false);
@@ -111,6 +171,13 @@ export default function App() {
     () => calculateLeaveTime(text),
     [text, now]
   );
+
+  const [eowOpen, setEowOpen] = useState(false);
+  const [currentWeekTasks, setCurrentWeekTasks] = useState("");
+  const [nextWeekTasks, setNextWeekTasks] = useState("");
+  const [roadblocks, setRoadblocks] = useState("");
+  const [employeeName, setEmployeeName] = useState("");
+
   useEffect(() => {
     if (
       !notificationEnabled ||
@@ -161,6 +228,8 @@ export default function App() {
     }
   };
 
+
+
   return (
     <div
       style={{
@@ -176,8 +245,35 @@ export default function App() {
         }}
       >
         <Space orientation="vertical" size="large" style={{ width: "100%" }}>
-          <div>
+          {dayjs().day() === 4 && (
+            <Alert
+              type="warning"
+              banner
+              showIcon
+              message="It's Thursday — don't forget to send your EOW email. Click on the 'Send EOW Email' button to proceed."
+            />
+          )}
+
+          <div
+            style={{
+              position: "relative",
+              textAlign: "center",
+            }}
+          >
+            <Button
+              type="link"
+              onClick={() => setEowOpen(true)}
+              style={{
+                position: "absolute",
+                right: 0,
+                top: 0,
+              }}
+            >
+              Send EOW Email
+            </Button>
+
             <Title level={2}>Paybook Office Timer</Title>
+
             <Text>
               Paste your punches data and get the expected leave time.
             </Text>
@@ -210,6 +306,87 @@ export default function App() {
             />
           )}
 
+          <Modal
+            title="Send EOW Email"
+            open={eowOpen}
+            onCancel={() => setEowOpen(false)}
+            onOk={() => {
+              openEowEmail({
+                currentWeekTasks,
+                nextWeekTasks,
+                roadblocks,
+                employeeName,
+              });
+
+              setEowOpen(false);
+            }}
+            okText="Open Outlook"
+            width={700}
+          >
+            <Space
+              orientation="vertical"
+              size="middle"
+              style={{ width: "100%" }}
+            >
+              <Input
+                placeholder="Your Name"
+                value={employeeName}
+                onChange={(e) =>
+                  setEmployeeName(e.target.value)
+                }
+              />
+
+              <div>
+                <Text strong>
+                  Current Week Tasks
+                </Text>
+
+                <TextArea
+                  rows={6}
+                  placeholder={`1. Paybook notifier enhancements
+2. Fixed live timer issue
+3. Deployed app to Netlify`}
+                  value={currentWeekTasks}
+                  onChange={(e) =>
+                    setCurrentWeekTasks(e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <Text strong>
+                  Next Week Priorities
+                </Text>
+
+                <TextArea
+                  rows={6}
+                  placeholder={`1. Improve UI
+2. Add charts
+3. Optimize notifications`}
+                  value={nextWeekTasks}
+                  onChange={(e) =>
+                    setNextWeekTasks(e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <Text strong>
+                  Roadblocks
+                </Text>
+
+                <TextArea
+                  rows={4}
+                  placeholder="Mention blockers if any"
+                  value={roadblocks}
+                  onChange={(e) =>
+                    setRoadblocks(e.target.value)
+                  }
+                />
+              </div>
+            </Space>
+          </Modal>
+
           {result && (
             <LiveDashboard
               result={result}
@@ -217,6 +394,7 @@ export default function App() {
             />
           )}
         </Space>
+        {/* <Footer /> */}
       </Card>
     </div>
   );
@@ -386,5 +564,28 @@ function LiveDashboard({ result, notificationEnabled }) {
         </div>
       </Space>
     </Card>
+  );
+}
+
+function Footer() {
+  return (
+    <div
+      style={{
+        marginTop: 40,
+        textAlign: "center",
+        opacity: 0.7,
+      }}
+    >
+      <Text type="secondary">
+        Creation of lazy mind of{" "}
+        <a
+          href="https://github.com/dnyaneshwargiri510"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Dnyaneshwar Giri
+        </a>
+      </Text>
+    </div>
   );
 }
