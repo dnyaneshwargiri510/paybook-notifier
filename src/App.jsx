@@ -394,7 +394,7 @@ export default function App() {
             />
           )}
         </Space>
-        {/* <Footer /> */}
+        { <Footer />}
       </Card>
     </div>
   );
