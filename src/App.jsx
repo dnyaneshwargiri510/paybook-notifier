@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Button, Card, Input, Space, Typography, Alert, Modal } from "antd";
 import dayjs from "dayjs";
 
-
-
 const { TextArea } = Input;
 const { Title, Text } = Typography;
 
@@ -54,9 +52,7 @@ function calculateLeaveTime(text) {
 
   if (activeIn) {
     const now = dayjs();
-    const currentTime = dayjs(
-      `2026-01-01 ${now.format("HH:mm")}`
-    );
+    const currentTime = dayjs(`2026-01-01 ${now.format("HH:mm")}`);
     workedMinutes += currentTime.diff(activeIn, "minute");
   }
   const lastInPunch = [...punches].reverse().find((p) => p.type === "IN");
@@ -77,9 +73,7 @@ function calculateLeaveTime(text) {
   let leaveTime = null;
 
   if (isCurrentlyInOffice) {
-    leaveTime = dayjs()
-      .add(remainingMinutes, "minute")
-      .format("HH:mm");
+    leaveTime = dayjs().add(remainingMinutes, "minute").format("HH:mm");
   }
 
   return {
@@ -88,9 +82,7 @@ function calculateLeaveTime(text) {
     workedMinutes,
     remainingMinutes,
     isCurrentlyInOffice,
-    activeInTime: activeIn
-      ? activeIn.format("HH:mm")
-      : null,
+    activeInTime: activeIn ? activeIn.format("HH:mm") : null,
   };
 }
 
@@ -157,7 +149,7 @@ Best regards,
 ${employeeName}
 `;
   const mailto = `mailto:Mceod@transperfect.com?subject=${encodeURIComponent(
-    subject
+    subject,
   )}&body=${encodeURIComponent(body)}`;
 
   window.location.href = mailto;
@@ -167,10 +159,7 @@ export default function App() {
   const [text, setText] = useState("");
   const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [now, setNow] = useState(dayjs());
-  const result = useMemo(
-    () => calculateLeaveTime(text),
-    [text, now]
-  );
+  const result = useMemo(() => calculateLeaveTime(text), [text, now]);
 
   const [eowOpen, setEowOpen] = useState(false);
   const [currentWeekTasks, setCurrentWeekTasks] = useState("");
@@ -179,11 +168,7 @@ export default function App() {
   const [employeeName, setEmployeeName] = useState("");
 
   useEffect(() => {
-    if (
-      !notificationEnabled ||
-      !result ||
-      !result.leaveTime
-    ) {
+    if (!notificationEnabled || !result || !result.leaveTime) {
       return;
     }
 
@@ -195,7 +180,7 @@ export default function App() {
     const now = dayjs();
 
     const leaveMoment = dayjs(
-      `${now.format("YYYY-MM-DD")} ${result.leaveTime}`
+      `${now.format("YYYY-MM-DD")} ${result.leaveTime}`,
     );
 
     const delay = leaveMoment.diff(now);
@@ -227,8 +212,6 @@ export default function App() {
       setNotificationEnabled(true);
     }
   };
-
-
 
   return (
     <div
@@ -299,11 +282,7 @@ export default function App() {
           </Button>
 
           {notificationEnabled && (
-            <Alert
-              type="success"
-              title="Notifications enabled"
-              showIcon
-            />
+            <Alert type="success" title="Notifications enabled" showIcon />
           )}
 
           <Modal
@@ -331,15 +310,11 @@ export default function App() {
               <Input
                 placeholder="Your Name"
                 value={employeeName}
-                onChange={(e) =>
-                  setEmployeeName(e.target.value)
-                }
+                onChange={(e) => setEmployeeName(e.target.value)}
               />
 
               <div>
-                <Text strong>
-                  Current Week Tasks
-                </Text>
+                <Text strong>Current Week Tasks</Text>
 
                 <TextArea
                   rows={6}
@@ -347,16 +322,12 @@ export default function App() {
 2. Fixed live timer issue
 3. Deployed app to Netlify`}
                   value={currentWeekTasks}
-                  onChange={(e) =>
-                    setCurrentWeekTasks(e.target.value)
-                  }
+                  onChange={(e) => setCurrentWeekTasks(e.target.value)}
                 />
               </div>
 
               <div>
-                <Text strong>
-                  Next Week Priorities
-                </Text>
+                <Text strong>Next Week Priorities</Text>
 
                 <TextArea
                   rows={6}
@@ -364,24 +335,18 @@ export default function App() {
 2. Add charts
 3. Optimize notifications`}
                   value={nextWeekTasks}
-                  onChange={(e) =>
-                    setNextWeekTasks(e.target.value)
-                  }
+                  onChange={(e) => setNextWeekTasks(e.target.value)}
                 />
               </div>
 
               <div>
-                <Text strong>
-                  Roadblocks
-                </Text>
+                <Text strong>Roadblocks</Text>
 
                 <TextArea
                   rows={4}
                   placeholder="Mention blockers if any"
                   value={roadblocks}
-                  onChange={(e) =>
-                    setRoadblocks(e.target.value)
-                  }
+                  onChange={(e) => setRoadblocks(e.target.value)}
                 />
               </div>
             </Space>
@@ -394,7 +359,7 @@ export default function App() {
             />
           )}
         </Space>
-        { <Footer />}
+        {<Footer />}
       </Card>
     </div>
   );
@@ -413,22 +378,13 @@ function LiveDashboard({ result, notificationEnabled }) {
 
   let liveWorkedMinutes = result.workedMinutes;
 
-  if (
-    result.isCurrentlyInOffice &&
-    result.activeInTime
-  ) {
+  if (result.isCurrentlyInOffice && result.activeInTime) {
     liveWorkedMinutes += now.second() / 60;
   }
 
-  const remainingMinutes = Math.max(
-    REQUIRED_MINUTES - liveWorkedMinutes,
-    0
-  )
+  const remainingMinutes = Math.max(REQUIRED_MINUTES - liveWorkedMinutes, 0);
 
-  const progress = Math.min(
-    (liveWorkedMinutes / REQUIRED_MINUTES) * 100,
-    100
-  );
+  const progress = Math.min((liveWorkedMinutes / REQUIRED_MINUTES) * 100, 100);
 
   const formatTime = (minutes) => {
     const hrs = Math.floor(minutes / 60);
@@ -444,11 +400,7 @@ function LiveDashboard({ result, notificationEnabled }) {
         borderRadius: 20,
       }}
     >
-      <Space
-        orientation="vertical"
-        size="large"
-        style={{ width: "100%" }}
-      >
+      <Space orientation="vertical" size="large" style={{ width: "100%" }}>
         <div
           style={{
             display: "flex",
@@ -471,6 +423,8 @@ function LiveDashboard({ result, notificationEnabled }) {
                 fontSize: 48,
                 fontWeight: 800,
                 marginTop: 16,
+                color:
+                  liveWorkedMinutes > REQUIRED_MINUTES ? "#ff4d4f" : "inherit",
               }}
             >
               {formatTime(liveWorkedMinutes)}
@@ -555,8 +509,7 @@ function LiveDashboard({ result, notificationEnabled }) {
               style={{
                 width: `${progress}%`,
                 height: "100%",
-                background:
-                  "linear-gradient(90deg, #1677ff, #52c41a)",
+                background: "linear-gradient(90deg, #1677ff, #52c41a)",
                 transition: "width 1s linear",
               }}
             />
