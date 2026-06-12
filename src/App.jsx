@@ -205,6 +205,29 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (!notificationEnabled) {
+      return;
+    }
+    const scheduleLunchNotification = () => {
+      const now = dayjs();
+      let lunchTime = dayjs().hour(12).minute(45).second(0).millisecond(0);
+      if (now.isAfter(lunchTime)) {
+        lunchTime = lunchTime.add(1, "day");
+      }
+      const delay = lunchTime.diff(now);
+      const timer = setTimeout(() => {
+        new Notification("🍱 Lunch Time!", {
+          body: "It's 12:45 PM. Time to take your lunch break.",
+        });
+        scheduleLunchNotification();
+      }, delay);
+      return timer;
+    };
+    const timer = scheduleLunchNotification();
+    return () => clearTimeout(timer);
+  }, [notificationEnabled]);
+
   const enableNotifications = async () => {
     const permission = await Notification.requestPermission();
 
@@ -318,9 +341,9 @@ export default function App() {
 
                 <TextArea
                   rows={6}
-                  placeholder={`1. Paybook notifier enhancements
-2. Fixed live timer issue
-3. Deployed app to Netlify`}
+                  placeholder={`1. 
+2. 
+3. `}
                   value={currentWeekTasks}
                   onChange={(e) => setCurrentWeekTasks(e.target.value)}
                 />
@@ -331,9 +354,9 @@ export default function App() {
 
                 <TextArea
                   rows={6}
-                  placeholder={`1. Improve UI
-2. Add charts
-3. Optimize notifications`}
+                  placeholder={`1. 
+2. 
+3. `}
                   value={nextWeekTasks}
                   onChange={(e) => setNextWeekTasks(e.target.value)}
                 />
