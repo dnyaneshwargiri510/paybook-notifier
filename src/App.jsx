@@ -484,16 +484,30 @@ function LiveDashboard({ result, notificationEnabled }) {
         >
           <Text type="secondary">Leave Office At</Text>
 
-          <div
-            style={{
-              fontSize: 64,
-              fontWeight: 900,
-              marginTop: 10,
-              letterSpacing: 2,
-            }}
-          >
-            {result.leaveTime || "--:--"}
-          </div>
+          {result.leaveTime ? (
+            <div
+              style={{
+                fontSize: 64,
+                fontWeight: 900,
+                marginTop: 10,
+                letterSpacing: 2,
+              }}
+            >
+              {result.leaveTime}
+            </div>
+          ) : (
+            <div
+              style={{
+                fontSize: 14, // Small font size
+                color: "#ff4d4f", // Ant Design standard red color
+                fontWeight: 500,
+                marginTop: 15,
+              }}
+            >
+              As per Punches it seems you are not in the office yet hence leave
+              time cannot be calculated
+            </div>
+          )}
 
           {notificationEnabled && (
             <Alert
