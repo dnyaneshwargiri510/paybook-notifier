@@ -569,7 +569,7 @@ function Footer() {
       <Text type="secondary">
         Creation of lazy mind of{" "}
         <a
-          href="https://github.com/dnyaneshwargiri510"
+          href="https://github.com/dnyaneshwargiri"
           target="_blank"
           rel="noreferrer"
         >
